@@ -33,15 +33,18 @@ for s = 1:num_subs
         yTrain = yTrain(idx);
         
         inputSize = 24;
-        numHiddenUnits1 = 215;
-        numHiddenUnits2 = 115;
+        numHiddenUnits1 = 20;
+        numHiddenUnits2 = 10;
         numClasses = 2;
         
         layers = [ ...
             sequenceInputLayer(inputSize)
             lstmLayer(numHiddenUnits1,'OutputMode','sequence')
+            dropoutLayer(0.2)
+            bilstmLayer(numHiddenUnits2,'OutputMode','sequence')
+            dropoutLayer(0.2)
+            bilstmLayer(numHiddenUnits2,'OutputMode','last')
             dropoutLayer(0.4)
-            bilstmLayer(numHiddenUnits1,'OutputMode','last')
             fullyConnectedLayer(numClasses)
             softmaxLayer
             classificationLayer];
@@ -96,7 +99,7 @@ for s = 1:num_subs
     end % if xVal isempty
 end
 
-save('April_05_21_home_walking4','validation_total_labels','validation_scores','validation_pred','training_accuracy','threshold','net');
+save('April_08_21_home_walking4str','validation_total_labels','validation_scores','validation_pred','training_accuracy','threshold','net','sub_ind','sub_name');
 
 [acc,spec,sens,f1,mcc] = get_performance_metrics(validation_total_labels,validation_pred);
 
@@ -107,6 +110,41 @@ plot([0,1],[0,1],'--k');
 xlabel('FPR'); ylabel('TPR');
 axis equal;
 xlim([0,1]); ylim([0,1]);
+
+fprintf('MCC = %f \n',mcc)
+
+fprintf('F1 = %f \n',f1)
+
+fprintf('AUC = %f \n',AUC)
+
+fprintf('Sens = %f \n',sens)
+
+fprintf('Spec = %f \n',spec)
+
+fprintf('Acc = %f \n',acc)
+
+
+for q = 1:39
+   ind = q == sub_ind;
+   sub_scores = validation_scores(ind,:);
+   sub_pred = validation_pred(ind);
+   mode_pred(q) = mode(sub_pred);
+   fall_status(q) = mode(fall_labels(ind));
+   mean_scores(q,:) = mean(sub_scores);
+   median_scores(q,:) = median(sub_scores);
+   mode_scores(q,:) = mode(sub_scores);
+end
+
+disp('-----After Aggregation------')
+[X,Y,T,AUC] = perfcurve(fall_status,mean_scores(:,2),categorical(1));
+%Plot stuff
+figure;plot(X,Y,'linewidth',2); hold on; grid on;
+plot([0,1],[0,1],'--k');
+xlabel('FPR'); ylabel('TPR');
+axis equal;
+xlim([0,1]); ylim([0,1]);
+
+[acc,spec,sens,f1,mcc] = get_performance_metrics3(fall_status,categorical(median_scores(:,2)>mean(threshold)));
 
 fprintf('MCC = %f \n',mcc)
 

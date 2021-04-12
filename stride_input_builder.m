@@ -29,7 +29,14 @@ for n = 1:length(indx)
     for b = 1:numel(short_bouts)
         if length(short_bouts(b).strides.strideStart) < 4
         else
-            agg_str{c} = aggFourStrides_norm(short_bouts(b).strides,short_bouts(b).thigh_acc,short_bouts(b).chest_acc);
+            s_time = datetime(short_bouts(b).startTime,'ConvertFrom','posixtime');
+            st_time = s_time.Hour + s_time.Minute/60 + s_time.Second/3600;
+            str = aggFourStrides_norm(short_bouts(b).strides,short_bouts(b).thigh_acc,short_bouts(b).chest_acc);
+            len = size(str,2);
+            start_time = st_time + (short_bouts(b).strides.strideStart(1)/3600);
+            end_time = st_time + (short_bouts(b).strides.strideEnd(end)/3600);
+            bout_time = linspace(start_time,end_time,len);
+            agg_str{c} = [bout_time; str];
             sub_ind(c) = n;
             sub_name{c} = sub;
             fall_labels(c) = fall;

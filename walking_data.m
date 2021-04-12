@@ -2,7 +2,7 @@ clear;clc
 ok = questdlg('Select the directory the classified data','Get Directory','OK','OK');
 if isempty(ok); error('process ended'); end
 path = uigetdir();
-pathOut = fullfile(pwd,'Extracted Strides From Short Walking Bouts Session 3');
+pathOut = fullfile(pwd,'Session 1 3 strides per bout');
 % delete '.' in directory
 d = dir(path);
 k = 1; while k <= numel(d); if d(k).name(1) == '.'; d(k) = []; else; k = k+1; end; end
@@ -16,7 +16,7 @@ minimumStrideTime = 0.8910;
 maximumStrideTime = 1.64;
 minimumDutyFactor = 0.44;
 maximumDutyFactor = 0.73;
-nMinimumStridesPerBout = 4;
+nMinimumStridesPerBout = 3;
 
 for n = 1:length(indx)
     pathIn = fullfile(path,fn{indx(n)});
