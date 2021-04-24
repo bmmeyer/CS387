@@ -1,7 +1,7 @@
 % Train walking fall risk model from home data - using LOSO validation
 clear;clc
 
-load('three_strides_ABC_all.mat')
+load('five_strides_ABC_all.mat')
 training_accuracy = [];validation_accuracy = [];
 test_scores = [];
 test_pred = [];
@@ -9,7 +9,7 @@ test_total_labels = [];
 threshold = [];
 count = 1;
 
-agg_str = agg_str_abc;
+%agg_str = agg_str_abc;
 
 uni_subs = unique(sub_ind);
 
@@ -65,7 +65,7 @@ for s = 1:length(uni_subs)
         xVal = xVal(idx_v);
         yVal = yVal(idx_v);
         
-        inputSize = 19;
+        inputSize = 31;
         numHiddenUnits1 = 20;
         numHiddenUnits2 = 10;
         numClasses = 2;
@@ -136,7 +136,7 @@ for s = 1:length(uni_subs)
     end % if xVal isempty
 end
 
-save('April_23_21_home_raw_walking_3str_all_bouts_abc','test_total_labels','test_scores','test_pred','training_accuracy','threshold','net');
+save('April_23_21_home_raw_walking_5str_all_bouts_abc','test_total_labels','test_scores','test_pred','training_accuracy','threshold','net');
 
 [acc,spec,sens,f1,mcc] = get_performance_metrics(test_total_labels,test_pred);
 

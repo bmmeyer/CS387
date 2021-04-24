@@ -1,7 +1,7 @@
 % Train walking fall risk model from home data - using LOSO validation
 clear;clc
 
-load('fourstrides_w_time.mat')
+load('home_standing_inputs.mat')
 training_accuracy = [];
 validation_scores = [];
 validation_pred = [];
@@ -13,9 +13,9 @@ for s = 1:num_subs
     % split training and validaiton data.
     % Using leave one subject out validation
     val_ind = sub_ind == s;
-    xVal = agg_str(val_ind);
+    xVal = agg_stand_noZ(val_ind);
     yVal = fall_labels(val_ind);
-    xTrain = agg_str(~val_ind);
+    xTrain = agg_stand_noZ(~val_ind);
     yTrain = fall_labels(~val_ind);
     
     if isempty(xVal)
@@ -32,17 +32,17 @@ for s = 1:num_subs
         xTrain = xTrain(idx);
         yTrain = yTrain(idx);
         
-        inputSize = 25;
-        numHiddenUnits1 = 20;
-        numHiddenUnits2 = 10;
+        inputSize = 4;
+        numHiddenUnits1 = 50;
+        numHiddenUnits2 = 25;
         numClasses = 2;
         
         layers = [ ...
             sequenceInputLayer(inputSize)
             lstmLayer(numHiddenUnits1,'OutputMode','sequence')
-            dropoutLayer(0.2)
-            bilstmLayer(numHiddenUnits2,'OutputMode','sequence')
-            dropoutLayer(0.2)
+            dropoutLayer(0.3)
+%             bilstmLayer(numHiddenUnits2,'OutputMode','sequence')
+%             dropoutLayer(0.2)
             bilstmLayer(numHiddenUnits2,'OutputMode','last')
             dropoutLayer(0.4)
             fullyConnectedLayer(numClasses)
@@ -99,7 +99,7 @@ for s = 1:num_subs
     end % if xVal isempty
 end
 
-save('April_12_21_home_walking4str_w_time','validation_total_labels','validation_scores','validation_pred','training_accuracy','threshold','net','sub_ind','sub_name');
+save('April_14_21_home_standing_noZ','validation_total_labels','validation_scores','validation_pred','training_accuracy','threshold','net','sub_ind','sub_name');
 
 [acc,spec,sens,f1,mcc] = get_performance_metrics(validation_total_labels,validation_pred);
 

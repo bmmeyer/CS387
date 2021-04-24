@@ -1,23 +1,38 @@
 % Train walking fall risk model from home data - using LOSO validation
 clear;clc
 
-load('raw_walking_data_4str.mat')
+load('raw_walking_data.mat')
 training_accuracy = [];
-validation_scores = [];
-validation_pred = [];
-validation_total_labels = [];
+validation_accuracy = [];
+test_pred = [];
+test_scores = [];
+test_total_labels = [];
 threshold = [];
 count = 1;
-for s = 1:num_subs
+for s = 1:length(uni_subs)
     fprintf('Iteration %d of %d \n',s,num_subs)
     % split training and validaiton data.
     % Using leave one subject out validation
-    val_ind = sub_ind == s;
-    xVal = agg_str(val_ind);
-    yVal = fall_labels(val_ind);
-    xTrain = agg_str(~val_ind);
-    yTrain = fall_labels(~val_ind);
-    
+  uni_subs = unique(sub_ind);
+    if s < length(uni_subs)
+        val_ind = sub_ind == uni_subs(s);
+        test_ind = sub_ind == uni_subs(s+1);
+        xVal = agg_str(val_ind);
+        yVal = fall_labels(val_ind);
+        xTest = agg_str(test_ind);
+        yTest = fall_labels(test_ind);
+        xTrain = agg_str(~val_ind);
+        yTrain = fall_labels(~val_ind);
+    else
+        val_ind = sub_ind == uni_subs(s);
+        test_ind = sub_ind == uni_subs(1);
+        xVal = agg_str(val_ind);
+        yVal = fall_labels(val_ind);
+        xTest = agg_str(test_ind);
+        yTest = fall_labels(test_ind);
+        xTrain = agg_str(~val_ind);
+        yTrain = fall_labels(~val_ind);
+    end
     if isempty(xVal)
     else
         
@@ -31,6 +46,17 @@ for s = 1:num_subs
         [sequenceLengths,idx] = sort(sequenceLengths);
         xTrain = xTrain(idx);
         yTrain = yTrain(idx);
+        
+         
+        numObservationsVal = numel(xVal);
+        sequenceLengthsVal = [];
+        for i=1:numObservationsVal
+            sequence = xVal{i};
+            sequenceLengthsVal(i) = size(sequence,2);
+        end
+        [sequenceLengthsVal,idx_v] = sort(sequenceLengthsVal);
+        xVal = xVal(idx_v);
+        yVal = yVal(idx_v);
         
         inputSize = 6;
         numHiddenUnits1 = 20;
@@ -60,19 +86,19 @@ for s = 1:num_subs
             'SequenceLength','longest', ...
             'Shuffle','every-epoch', ... % 'Shuffle', Never
             'Verbose',1, ...
-            'Plots','none');
+            'Plots','none','ValidationData',{xVal,yVal});
         
         net = trainNetwork(xTrain,yTrain,layers,options);
         
-        numObservationsVal = numel(xVal);
-        sequenceLengthsVal = [];
-        for i=1:numObservationsVal
-            sequence = xVal{i};
-            sequenceLengthsVal(i) = size(sequence,2);
+         numObservationsTest = numel(xTest);
+        sequenceLengthsTest = [];
+        for i=1:numObservationsTest
+            sequence = xTest{i};
+            sequenceLengthsTest(i) = size(sequence,2);
         end
-        [sequenceLengthsVal,idx_v] = sort(sequenceLengthsVal);
-        xVal = xVal(idx_v);
-        yVal = yVal(idx_v);
+        [sequenceLengthsTest,idx_t] = sort(sequenceLengthsTest);
+        xTest = xTest(idx_t);
+        yTest = yTest(idx_t);
         
         [YPred_tr,train_scores] = classify(net,xTrain, ...
             'MiniBatchSize',miniBatchSize, ...
@@ -85,25 +111,31 @@ for s = 1:num_subs
         
         training_accuracy(count) = sum(YPred_tr == yTrain)./numel(yTrain);
         
-        [YPred,scores] = classify(net,xVal, ...
+        
+        [YPred_val,val_scores] = classify(net,xVal, ...
+            'MiniBatchSize',miniBatchSize, ...
+            'SequenceLength','longest');
+        validation_accuracy(count) = sum(YPred_val == yVal)./numel(yVal);
+        
+        [YPred,scores] = classify(net,xTest, ...
             'MiniBatchSize',miniBatchSize, ...
             'SequenceLength','longest');
         
         
-        validation_pred = [validation_pred; YPred];
-        validation_scores = [validation_scores; scores];
-        validation_total_labels = [validation_total_labels; yVal];
+        test_pred = [test_pred; YPred];
+        test_scores = [test_scores; scores];
+        test_total_labels = [test_total_labels; yVal];
         
         clear sequenceLengthsVal sequenceLengths
         count = count+1;
     end % if xVal isempty
 end
 
-save('April_08_21_home_raw_walking','validation_total_labels','validation_scores','validation_pred','training_accuracy','threshold','net');
+save('April_20_21_home_raw_walking','test_total_labels','test_scores','test_pred','training_accuracy','threshold','net');
 
-[acc,spec,sens,f1,mcc] = get_performance_metrics(validation_total_labels,validation_pred);
+[acc,spec,sens,f1,mcc] = get_performance_metrics(test_total_labels,test_pred);
 
-[X,Y,T,AUC] = perfcurve(validation_total_labels,validation_scores(:,2),categorical(1));
+[X,Y,T,AUC] = perfcurve(test_total_labels,test_scores(:,2),categorical(1));
 %Plot stuff
 figure;plot(X,Y,'linewidth',2); hold on; grid on;
 plot([0,1],[0,1],'--k');
@@ -122,6 +154,44 @@ fprintf('Sens = %f \n',sens)
 fprintf('Spec = %f \n',spec)
 
 fprintf('Acc = %f \n',acc)
+
+
+
+for q = 1:39
+   ind = q == sub_ind;
+   sub_scores = test_scores(ind,:);
+   sub_pred = test_pred(ind);
+   mode_pred(q) = mode(sub_pred);
+   fall_status(q) = mode(fall_labels(ind));
+   mean_scores(q,:) = mean(sub_scores);
+   median_scores(q,:) = median(sub_scores);
+   mode_scores(q,:) = mode(sub_scores);
+end
+
+disp('-----After Aggregation------')
+[X,Y,T,AUC] = perfcurve(fall_status,mean_scores(:,2),categorical(1));
+%Plot stuff
+figure;plot(X,Y,'linewidth',2); hold on; grid on;
+plot([0,1],[0,1],'--k');
+xlabel('FPR'); ylabel('TPR');
+axis equal;
+xlim([0,1]); ylim([0,1]);
+
+[acc,spec,sens,f1,mcc] = get_performance_metrics3(fall_status,categorical(median_scores(:,2)>mean(threshold)));
+
+fprintf('MCC = %f \n',mcc)
+
+fprintf('F1 = %f \n',f1)
+
+fprintf('AUC = %f \n',AUC)
+
+fprintf('Sens = %f \n',sens)
+
+fprintf('Spec = %f \n',spec)
+
+fprintf('Acc = %f \n',acc)
+
+
 
 
 

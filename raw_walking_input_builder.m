@@ -2,7 +2,7 @@
 % requires data that has already been classified with walking extracted
 % data will be kept offline for IRB reasons
 clear; clc
-path = fullfile(pwd,'Extracted Strides From Short Walking Bouts Session 1');
+path = fullfile(pwd,'Session 1 raw bouts');
 tbl = readtable('ms_fall_study_session1_final.xlsx');
 d = dir(path);
 k = 1; while k <= numel(d); if d(k).name(1) == '.'; d(k) = []; else; k = k+1; end; end
@@ -21,6 +21,7 @@ for n = 1:length(indx)
     for t = 1:size(tbl,1)
         if strcmp(tbl{t,3},sub)
             fall = categorical(tbl{t,2});
+            abc = tbl.ABC(t);
             break;
         end
     end%t
@@ -35,7 +36,8 @@ for n = 1:length(indx)
             len = length(short_bouts(b).chest_acc);
             end_time = start_time + (dt*len);
             bout_time = linspace(start_time,end_time,len);
-            agg_str{c} = [bout_time;normalize(short_bouts(b).thigh_acc);normalize(short_bouts(b).chest_acc)];
+            ABC = ones(floor(len),1) * abc;
+            agg_str{c} = [ABC';bout_time;normalize(short_bouts(b).thigh_acc);normalize(short_bouts(b).chest_acc)];
             sub_ind(c) = n;
             sub_name{c} = sub;
             fall_labels(c) = fall;

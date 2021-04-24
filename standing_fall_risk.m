@@ -1,19 +1,15 @@
 % Train walking fall risk model from home data - using LOSO validation
 clear;clc
 
-load('three_strides_ABC_all.mat')
-training_accuracy = [];validation_accuracy = [];
-test_scores = [];
+load('home_standing_inputs_4_wABC_from60sec.mat')
+training_accuracy = [];
+validation_accuracy = [];
 test_pred = [];
+test_scores = [];
 test_total_labels = [];
 threshold = [];
 count = 1;
-
-agg_str = agg_str_abc;
-
-uni_subs = unique(sub_ind);
-
-for s = 1:length(uni_subs)
+for s = 1:num_subs
     fprintf('Iteration %d of %d \n',s,num_subs)
     % split training and validaiton data.
     % Using leave one subject out validation
@@ -21,23 +17,22 @@ for s = 1:length(uni_subs)
     if s < length(uni_subs)
         val_ind = sub_ind == uni_subs(s);
         test_ind = sub_ind == uni_subs(s+1);
-        xVal = agg_str(val_ind);
+        xVal = agg_stand(val_ind);
         yVal = fall_labels(val_ind);
-        xTest = agg_str(test_ind);
+        xTest = agg_stand(test_ind);
         yTest = fall_labels(test_ind);
-        xTrain = agg_str(~val_ind);
+        xTrain = agg_stand(~val_ind);
         yTrain = fall_labels(~val_ind);
     else
         val_ind = sub_ind == uni_subs(s);
         test_ind = sub_ind == uni_subs(1);
-        xVal = agg_str(val_ind);
+        xVal = agg_stand(val_ind);
         yVal = fall_labels(val_ind);
-        xTest = agg_str(test_ind);
+        xTest = agg_stand(test_ind);
         yTest = fall_labels(test_ind);
-        xTrain = agg_str(~val_ind);
+        xTrain = agg_stand(~val_ind);
         yTrain = fall_labels(~val_ind);
     end
-    
     if isempty(xVal)
     else
         
@@ -52,9 +47,6 @@ for s = 1:length(uni_subs)
         xTrain = xTrain(idx);
         yTrain = yTrain(idx);
         
-        
-        
-        
         numObservationsVal = numel(xVal);
         sequenceLengthsVal = [];
         for i=1:numObservationsVal
@@ -65,22 +57,25 @@ for s = 1:length(uni_subs)
         xVal = xVal(idx_v);
         yVal = yVal(idx_v);
         
-        inputSize = 19;
-        numHiddenUnits1 = 20;
-        numHiddenUnits2 = 10;
+        
+        inputSize = 7;
+        numHiddenUnits1 = 50;
+        numHiddenUnits2 = 25;
         numClasses = 2;
         
         layers = [ ...
             sequenceInputLayer(inputSize)
             lstmLayer(numHiddenUnits1,'OutputMode','sequence')
             dropoutLayer(0.3)
-            bilstmLayer(numHiddenUnits2,'OutputMode','Last')
+            %             bilstmLayer(numHiddenUnits2,'OutputMode','sequence')
+            %             dropoutLayer(0.2)
+            bilstmLayer(numHiddenUnits2,'OutputMode','last')
             dropoutLayer(0.4)
             fullyConnectedLayer(numClasses)
             softmaxLayer
             classificationLayer];
         
-        maxEpochs = 25;
+        maxEpochs = 10;
         miniBatchSize = 200;
         
         options = trainingOptions('adam', ...
@@ -91,7 +86,8 @@ for s = 1:length(uni_subs)
             'SequenceLength','longest', ...
             'Shuffle','every-epoch', ... % 'Shuffle', Never
             'Verbose',1, ...
-            'Plots','none','ValidationData',{xVal,yVal});
+            'Plots','none',...
+            'ValidationData',{xVal,yVal});
         
         net = trainNetwork(xTrain,yTrain,layers,options);
         
@@ -136,7 +132,7 @@ for s = 1:length(uni_subs)
     end % if xVal isempty
 end
 
-save('April_23_21_home_raw_walking_3str_all_bouts_abc','test_total_labels','test_scores','test_pred','training_accuracy','threshold','net');
+save('April_22_21_home_standing_Z_abc_10ep','test_total_labels','test_scores','test_pred','training_accuracy','threshold','net','sub_ind','sub_name','validation_accuracy');
 
 [acc,spec,sens,f1,mcc] = get_performance_metrics(test_total_labels,test_pred);
 
@@ -161,13 +157,12 @@ fprintf('Spec = %f \n',spec)
 fprintf('Acc = %f \n',acc)
 
 
-
 for q = 1:num_subs
-    ind = q == sub_ind;
+    ind = uni_subs(q) == sub_ind;
     sub_scores = test_scores(ind,:);
     sub_pred = test_pred(ind);
     mode_pred(q) = mode(sub_pred);
-    fall_status(q) = mode(fall_labels(ind));
+    fall_status(q) = mode(test_total_labels(ind));
     mean_scores(q,:) = mean(sub_scores);
     median_scores(q,:) = median(sub_scores);
     mode_scores(q,:) = mode(sub_scores);
@@ -195,3 +190,6 @@ fprintf('Sens = %f \n',sens)
 fprintf('Spec = %f \n',spec)
 
 fprintf('Acc = %f \n',acc)
+
+
+

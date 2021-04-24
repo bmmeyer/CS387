@@ -2,7 +2,7 @@ clear;clc
 ok = questdlg('Select the directory the classified data','Get Directory','OK','OK');
 if isempty(ok); error('process ended'); end
 path = uigetdir();
-pathOut = fullfile(pwd,'Session 1 raw bouts');
+pathOut = fullfile(pwd,'Session 1 all bouts');
 % delete '.' in directory
 d = dir(path);
 k = 1; while k <= numel(d); if d(k).name(1) == '.'; d(k) = []; else; k = k+1; end; end
@@ -34,7 +34,7 @@ for n = 1:length(indx)
             
         end
         
-        if bout(i).duration <= 12 && bout(i).label == 1 && low_conf == 0
+        if bout(i).label == 1 && low_conf == 0
             short_bouts(count) = bout(i);
             count = count + 1;
         end
@@ -63,7 +63,6 @@ for n = 1:length(indx)
             end
             
         end
-        
         save(fullfile(pathOut,strcat(fn{indx(n)}(1:5),'_strides.mat')),'short_bouts')
         clear short_bouts
     end
