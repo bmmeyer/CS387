@@ -12,6 +12,8 @@ window_dur = 4;
 slide = 1; %set to one to slide the window dur, 2 for 1/2 window slide, 4 for 1/4
 agg_stand = [];
 agg_stand_noZ = [];
+agg_stand_abc = [];
+agg_stand_noZ_abc = [];
 c = 1;
 for n = 1:length(indx)
     pathIn = fullfile(path,fn{indx(n)});
@@ -36,21 +38,27 @@ for n = 1:length(indx)
                     start = 1;
                     end_ind = 31.25 * window_dur;
                     ABC = ones(floor(31.25 * window_dur),1) * abc;
-                    agg_stand{c} = [ABC'; standing_bouts(b).thigh_acc(:,1:end_ind);standing_bouts(b).chest_acc(:,1:end_ind)];
-                    agg_stand_noZ{c} = [ABC'; standing_bouts(b).thigh_acc(1:2,1:end_ind);standing_bouts(b).chest_acc(1:2,1:end_ind)];
+                    agg_stand{c} = [standing_bouts(b).thigh_acc(:,1:end_ind);standing_bouts(b).chest_acc(:,1:end_ind)];
+                    agg_stand_noZ{c} = [standing_bouts(b).thigh_acc(1:2,1:end_ind);standing_bouts(b).chest_acc(1:2,1:end_ind)];
+                    agg_stand_abc{c} = [ABC'; standing_bouts(b).thigh_acc(:,1:end_ind);standing_bouts(b).chest_acc(:,1:end_ind)];
+                    agg_stand_noZ_abc{c} = [ABC'; standing_bouts(b).thigh_acc(1:2,1:end_ind);standing_bouts(b).chest_acc(1:2,1:end_ind)];
                     sub_ind(c) = n;
                     sub_name{c} = sub;
                     fall_labels(c) = fall;
+                    timeSinceStart(c) = standing_bouts(b).startTime;
                     c = c + 1;
                 else
                     start = (k-1) * (125/slide) + 1;
                     end_ind = (start-1) + floor(window_dur * 31.25); %assuming 31.25Hz sampling rate
                     ABC = ones(floor(31.25 * window_dur),1) * abc;
-                    agg_stand{c} = [ABC'; standing_bouts(b).thigh_acc(:,start:end_ind);standing_bouts(b).chest_acc(:,start:end_ind)];
-                    agg_stand_noZ{c} = [ABC'; standing_bouts(b).thigh_acc(1:2,start:end_ind);standing_bouts(b).chest_acc(1:2,start:end_ind)];
+                    agg_stand{c} = [standing_bouts(b).thigh_acc(:,start:end_ind);standing_bouts(b).chest_acc(:,start:end_ind)];
+                    agg_stand_noZ{c} = [standing_bouts(b).thigh_acc(1:2,start:end_ind);standing_bouts(b).chest_acc(1:2,start:end_ind)];
+                    agg_stand_abc{c} = [ABC'; standing_bouts(b).thigh_acc(:,start:end_ind);standing_bouts(b).chest_acc(:,start:end_ind)];
+                    agg_stand_noZ_abc{c} = [ABC'; standing_bouts(b).thigh_acc(1:2,start:end_ind);standing_bouts(b).chest_acc(1:2,start:end_ind)];
                     sub_ind(c) = n;
                     sub_name{c} = sub;
                     fall_labels(c) = fall;
+                    timeSinceStart(c) = standing_bouts(b).startTime;
                     c = c + 1;
                 end
                 
@@ -60,8 +68,12 @@ for n = 1:length(indx)
     
 end % n
 
+num_subs = length(unique(sub_ind));
 agg_stand = agg_stand';
 agg_stand_noZ = agg_stand_noZ';
+agg_stand_abc = agg_stand_abc';
+agg_stand_noZ_abc = agg_stand_noZ_abc';
 sub_ind = sub_ind';
 sub_name = sub_name';
 fall_labels = fall_labels';
+timeSinceStart = timeSinceStart';
